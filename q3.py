@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Hyper parameters
-num_epochs = 5
+num_epochs = 100
 num_classes = 10
 batch_size = 32
 num_workers=4
@@ -63,15 +63,18 @@ class ConvNet(nn.Module):
             nn.Conv2d(3, 64, kernel_size=11, stride=1, padding=1),
             nn.MaxPool2d(kernel_size=2, stride=2))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=2),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1),
             nn.ReLU())
-        self.avgpool = nn.AvgPool2d(kernel_size=4)
+        self.avgpool = nn.AvgPool2d(kernel_size=10)
         self.fc = nn.Linear(1*1*128, num_classes)
         
     def forward(self, x):
         out = self.layer1(x)
+        # print(out.size())
         out = self.layer2(out)
+        # print(out.size())
         out = self.avgpool(out)
+        # print(out.size())
         out = out.reshape(out.size(0), -1)
         out = self.fc(out)
         return out
@@ -98,7 +101,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         
-        if (i+1) % 100 == 0:
+        if (i+1) % 10 == 0:
             print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' 
                    .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
 
