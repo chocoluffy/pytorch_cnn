@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Hyper parameters
-num_epochs = 100
+num_epochs = 2
 num_classes = 10
 batch_size = 32
 num_workers=4
@@ -85,9 +85,11 @@ model = ConvNet(num_classes).to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
+loss_lst = []
 # Train the model
 total_step = len(train_loader)
 for epoch in range(num_epochs):
+    total_loss = 0
     for i, (images, labels) in enumerate(train_loader):
         images = images.to(device)
         labels = labels.to(device)
@@ -101,9 +103,12 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         
-        if (i+1) % 10 == 0:
+        total_loss += loss.item()
+        if (i+1) % 200 == 0:
             print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' 
                    .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
+    epoch_loss = total_loss / len(train_loader.dataset)
+    loss_lst.append(epoch_loss)
 
 # Test the model
 model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
@@ -122,3 +127,13 @@ with torch.no_grad():
 
 # Save the model checkpoint
 torch.save(model.state_dict(), 'model.ckpt')
+
+loss_lst = [l.cpu().numpy() for l in loss_lst]
+
+plt.title("Loss vs. Number of Training Epochs")
+plt.xlabel("Training Epochs")
+plt.ylabel("Loss")
+plt.plot(range(1,num_epochs+1),loss_lst)
+plt.xticks(np.arange(1, num_epochs+1, 1.0))
+plt.legend()
+plt.savefig('loss-epoch.png')
