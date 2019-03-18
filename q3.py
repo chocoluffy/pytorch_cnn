@@ -128,7 +128,7 @@ with torch.no_grad():
 # Save the model checkpoint
 torch.save(model.state_dict(), 'model.ckpt')
 
-loss_lst = [l.cpu().numpy() for l in loss_lst]
+loss_lst = [l for l in loss_lst]
 
 plt.title("Loss vs. Number of Training Epochs")
 plt.xlabel("Training Epochs")
