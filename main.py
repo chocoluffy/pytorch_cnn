@@ -4,12 +4,13 @@ import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Hyper parameters
-num_epochs = 50
+num_epochs = 25
 num_classes = 10
 batch_size = 32
 num_workers=4
@@ -117,78 +118,82 @@ class ConvNet_with_bn(nn.Module):
         out = self.fc(out)
         return out
 
+def model_train(model=model):
+    # Loss and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+
+    loss_lst = []
+    # Train the model
+    total_step = len(train_loader)
+    for epoch in range(num_epochs):
+        total_loss = 0
+        for i, (images, labels) in enumerate(train_loader):
+            images = images.to(device)
+            labels = labels.to(device)
+            
+            # Forward pass
+            outputs = model(images)
+            loss = loss_fn(outputs, labels)
+            
+            # Backward and optimize
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
+            if (i+1) % 200 == 0:
+                print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' 
+                    .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
+        epoch_loss = total_loss / len(train_loader.dataset)
+        loss_lst.append(epoch_loss)
+
+    # Test the model
+    model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in test_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+        print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
+
+    # Save the model checkpoint
+    torch.save(model.state_dict(), 'model.ckpt')
+
+    loss_lst = [l for l in loss_lst]
+
+    # Draw loss-epoch graph.
+    def draw_loss():
+        ts = time.gmtime()
+        plt.title("Loss vs. Number of Training Epochs")
+        plt.xlabel("Training Epochs")
+        plt.ylabel("Loss")
+        plt.plot(range(1,num_epochs+1),loss_lst)
+        plt.xticks(np.arange(1, num_epochs+1, 1.0))
+        plt.legend()
+        plt.savefig('loss-epoch{}.png'.format(time.strftime("%Y-%m-%d %H:%M:%S", ts)))
+
+    draw_loss()
+
+    # Visualize conv filter
+    def vis_kernels():
+        kernels = model.layer1[0].weight.detach()
+        print(kernels.shape)
+        fig, axarr = plt.subplots(4, 16, figsize=(15, 15))
+        for x in range(4):
+            for y in range(16):
+                kernel_id = x * 4 + y
+                kernel = kernels[kernel_id]
+                # print(kernel.shape)
+                axarr[x, y].imshow(transforms.ToPILImage()(kernel), interpolation="bicubic")
+
 model = ConvNet(num_classes).to(device)
-# model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
-
-# Loss and optimizer
-loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-
-loss_lst = []
-# Train the model
-total_step = len(train_loader)
-for epoch in range(num_epochs):
-    total_loss = 0
-    for i, (images, labels) in enumerate(train_loader):
-        images = images.to(device)
-        labels = labels.to(device)
-        
-        # Forward pass
-        outputs = model(images)
-        loss = loss_fn(outputs, labels)
-        
-        # Backward and optimize
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        
-        total_loss += loss.item()
-        if (i+1) % 200 == 0:
-            print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' 
-                   .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
-    epoch_loss = total_loss / len(train_loader.dataset)
-    loss_lst.append(epoch_loss)
-
-# Test the model
-model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
-with torch.no_grad():
-    correct = 0
-    total = 0
-    for images, labels in test_loader:
-        images = images.to(device)
-        labels = labels.to(device)
-        outputs = model(images)
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-    print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
-
-# Save the model checkpoint
-torch.save(model.state_dict(), 'model.ckpt')
-
-loss_lst = [l for l in loss_lst]
-
-# Draw loss-epoch graph.
-def draw_loss():
-    plt.title("Loss vs. Number of Training Epochs")
-    plt.xlabel("Training Epochs")
-    plt.ylabel("Loss")
-    plt.plot(range(1,num_epochs+1),loss_lst)
-    plt.xticks(np.arange(1, num_epochs+1, 1.0))
-    plt.legend()
-    plt.savefig('loss-epoch.png')
-
-draw_loss()
-
-# Visualize conv filter
-def vis_kernels():
-    kernels = model.layer1[0].weight.detach()
-    print(kernels.shape)
-    fig, axarr = plt.subplots(4, 16, figsize=(15, 15))
-    for x in range(4):
-        for y in range(16):
-            kernel_id = x * 4 + y
-            kernel = kernels[kernel_id]
-            # print(kernel.shape)
-            axarr[x, y].imshow(transforms.ToPILImage()(kernel), interpolation="bicubic")
+model_train(model)
+model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
+model_train(model_bn)
