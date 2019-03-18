@@ -90,7 +90,7 @@ class ConvNet_with_bn(nn.Module):
     Add batch normalization layer right after each convolutional layers.
     """
     def __init__(self, num_classes=10):
-        super(ConvNet, self).__init__()
+        super(ConvNet_with_bn, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=11, stride=1, padding=1),
             nn.BatchNorm2d(num_features=64),
@@ -193,7 +193,7 @@ def model_train(model=None):
                 # print(kernel.shape)
                 axarr[x, y].imshow(transforms.ToPILImage()(kernel), interpolation="bicubic")
 
-model = ConvNet(num_classes).to(device)
-model_train(model)
+# model = ConvNet(num_classes).to(device)
+# model_train(model)
 model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
 model_train(model_bn)
