@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
-
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -130,10 +131,24 @@ torch.save(model.state_dict(), 'model.ckpt')
 
 loss_lst = [l for l in loss_lst]
 
-plt.title("Loss vs. Number of Training Epochs")
-plt.xlabel("Training Epochs")
-plt.ylabel("Loss")
-plt.plot(range(1,num_epochs+1),loss_lst)
-plt.xticks(np.arange(1, num_epochs+1, 1.0))
-plt.legend()
-plt.savefig('loss-epoch.png')
+# Draw loss-epoch graph.
+def draw_loss():
+    plt.title("Loss vs. Number of Training Epochs")
+    plt.xlabel("Training Epochs")
+    plt.ylabel("Loss")
+    plt.plot(range(1,num_epochs+1),loss_lst)
+    plt.xticks(np.arange(1, num_epochs+1, 1.0))
+    plt.legend()
+    plt.savefig('loss-epoch.png')
+
+# Visualize conv filter
+def vis_kernels():
+    kernels = model.layer1[0].weight.detach()
+    print(kernels.shape)
+    fig, axarr = plt.subplots(4, 16, figsize=(15, 15))
+    for x in range(4):
+        for y in range(16):
+            kernel_id = x * 4 + y
+            kernel = kernels[kernel_id]
+            # print(kernel.shape)
+            axarr[x, y].imshow(transforms.ToPILImage()(kernel), interpolation="bicubic")
