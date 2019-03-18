@@ -118,7 +118,7 @@ class ConvNet_with_bn(nn.Module):
         out = self.fc(out)
         return out
 
-def model_train(model=model):
+def model_train(model=None):
     # Loss and optimizer
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
