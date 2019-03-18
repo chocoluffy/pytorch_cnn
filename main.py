@@ -9,7 +9,7 @@ import numpy as np
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Hyper parameters
-num_epochs = 2
+num_epochs = 50
 num_classes = 10
 batch_size = 32
 num_workers=4
@@ -66,7 +66,10 @@ class ConvNet(nn.Module):
         self.layer2 = nn.Sequential(
             nn.Conv2d(64, 128, kernel_size=3, stride=1),
             nn.ReLU())
-        self.avgpool = nn.AvgPool2d(kernel_size=10)
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(128, 128, kernel_size=3, stride=1),
+            nn.ReLU())
+        self.avgpool = nn.AvgPool2d(kernel_size=8)
         self.fc = nn.Linear(1*1*128, num_classes)
         
     def forward(self, x):
@@ -74,6 +77,40 @@ class ConvNet(nn.Module):
         # print(out.size())
         out = self.layer2(out)
         # print(out.size())
+        out = self.layer3(out)
+        out = self.avgpool(out)
+        # print(out.size())
+        out = out.reshape(out.size(0), -1)
+        out = self.fc(out)
+        return out
+
+class ConvNet_with_bn(nn.Module):
+    """
+    Add batch normalization layer right after each convolutional layers.
+    """
+    def __init__(self, num_classes=10):
+        super(ConvNet, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=11, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=64),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, stride=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.ReLU())
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(128, 128, kernel_size=3, stride=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.ReLU())
+        self.avgpool = nn.AvgPool2d(kernel_size=8)
+        self.fc = nn.Linear(1*1*128, num_classes)
+        
+    def forward(self, x):
+        out = self.layer1(x)
+        # print(out.size())
+        out = self.layer2(out)
+        # print(out.size())
+        out = self.layer3(out)
         out = self.avgpool(out)
         # print(out.size())
         out = out.reshape(out.size(0), -1)
@@ -81,6 +118,7 @@ class ConvNet(nn.Module):
         return out
 
 model = ConvNet(num_classes).to(device)
+# model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
 
 # Loss and optimizer
 loss_fn = nn.CrossEntropyLoss()
@@ -140,6 +178,8 @@ def draw_loss():
     plt.xticks(np.arange(1, num_epochs+1, 1.0))
     plt.legend()
     plt.savefig('loss-epoch.png')
+
+draw_loss()
 
 # Visualize conv filter
 def vis_kernels():
