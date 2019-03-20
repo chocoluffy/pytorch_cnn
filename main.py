@@ -147,12 +147,10 @@ class ConvNet_deep(nn.Module):
         
     def forward(self, x):
         out = self.layer1(x)
-        # print(out.size())
         out = self.layer2(out)
-        # print(out.size())
         out = self.layer3(out)
+        out = self.layer4(out)
         out = self.avgpool(out)
-        # print(out.size())
         out = out.reshape(out.size(0), -1)
         out = self.fc(out)
         return out
@@ -234,5 +232,9 @@ def model_train(model=None):
 
 # model = ConvNet(num_classes).to(device)
 # model_train(model)
-model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
-model_train(model_bn)
+
+# model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
+# model_train(model_bn)
+
+model_deep = ConvNet_deep(num_classes).to(device) 
+model_train(model_deep)
