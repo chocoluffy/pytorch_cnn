@@ -120,7 +120,8 @@ class ConvNet_with_bn(nn.Module):
 
 class ConvNet_deep(nn.Module):
     """
-    Using smaller filter and deeper layers.
+    - Using smaller filter and deeper layers.
+    - Test Accuracy of the model on the 10000 test images: 83.2 %.
     """
     def __init__(self, num_classes=10):
         super(ConvNet_deep, self).__init__()
@@ -233,8 +234,8 @@ def model_train(model=None):
 # model = ConvNet(num_classes).to(device)
 # model_train(model)
 
-# model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
-# model_train(model_bn)
+model_bn = ConvNet_with_bn(num_classes).to(device) # model with batch normalization layer between each hidden layers. 
+model_train(model_bn)
 
-model_deep = ConvNet_deep(num_classes).to(device) 
-model_train(model_deep)
+# model_deep = ConvNet_deep(num_classes).to(device) 
+# model_train(model_deep)
