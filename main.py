@@ -118,6 +118,45 @@ class ConvNet_with_bn(nn.Module):
         out = self.fc(out)
         return out
 
+class ConvNet_deep(nn.Module):
+    """
+    Using smaller filter and deeper layers.
+    """
+    def __init__(self, num_classes=10):
+        super(ConvNet_deep, self).__init__()
+        self.layer1 = nn.Sequential( # 3*32*32 -> 64*16*16
+            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=64),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer2 = nn.Sequential( # 64*16*16 -> 128*8*8
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer3 = nn.Sequential( # 128*8*8 -> 256*4*4
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=256),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer4 = nn.Sequential( # 256*4*4 -> 512*4*4
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU())
+        self.avgpool = nn.AvgPool2d(kernel_size=4) # 512*4*4 -> 512*1*1
+        self.fc = nn.Linear(1*1*512, num_classes)
+        
+    def forward(self, x):
+        out = self.layer1(x)
+        # print(out.size())
+        out = self.layer2(out)
+        # print(out.size())
+        out = self.layer3(out)
+        out = self.avgpool(out)
+        # print(out.size())
+        out = out.reshape(out.size(0), -1)
+        out = self.fc(out)
+        return out
+
 def model_train(model=None):
     # Loss and optimizer
     loss_fn = nn.CrossEntropyLoss()
